@@ -8,8 +8,7 @@
   "license": "GPL-3.0",
   "type": "module",
   "scripts": {
-    "lint": "eslint src tests --ext ts --fix",
-    "format": "prettier --write {src,tests}/**/*.ts",
+    "format": "bunx @biomejs/biome check --apply .",
     "sversion": "standard-version",
     "commit": "git-cz",
     "cz": "git-cz",
@@ -17,36 +16,31 @@
     "start": "bun run src/main.ts"
   },
   "dependencies": {
-    "@sapphire/decorators": "^6.0.1",
+    "@sapphire/decorators": "^6.1.0",
     "@sapphire/framework": "^5.2.1",
     "@sapphire/pieces": "^4.2.2",
-    "discord.js": "^14.12.1",
+    "discord.js": "^14.15.3",
     "neat-config": "^3.0.0",
-    "node-wit": "^6.6.0",
-    "tesseractocr": "^2.0.3",
-    "tslib": "^2.6.1",
+    "systeminformation": "^5.22.10",
+    "tesseract.js": "^5.1.0",
+    "tslib": "^2.6.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@sapphire/eslint-config": "^5.0.4",
-    "@sapphire/prettier-config": "^2.0.0",
-    "@sapphire/ts-config": "^5.0.1",
-    "@types/node": "^20.12.12",
-    "@types/node-wit": "^6.0.1",
-    "@typescript-eslint/eslint-plugin": "^7.10.0",
-    "@typescript-eslint/parser": "^7.10.0",
-    "bun-types": "^1.0.1",
-    "eslint": "^9.3.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-prettier": "^5.1.3",
+    "@biomejs/biome": "^1.8.0",
+    "bun-types": "^1.1.12",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.5",
-    "prettier": "^3.2.5",
-    "pretty-quick": "^4.0.0",
-    "typescript": "^5.0.4"
+    "typescript": "^5.4.5"
   },
   "lint-staged": {
-    "*.{mjs,js,ts}": "eslint --fix --ext mjs,js,ts"
-  },
-  "prettier": "@sapphire/prettier-config"
+    "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
+      "biome check --files-ignore-unknown=true",
+      "biome check --apply --no-errors-on-unmatched",
+      "biome check --apply --organize-imports-enabled=true --no-errors-on-unmatched",
+      "biome check --apply-unsafe --no-errors-on-unmatched",
+      "biome format --write --no-errors-on-unmatched",
+      "biome lint --apply --no-errors-on-unmatched"
+    ]
+  }
 }

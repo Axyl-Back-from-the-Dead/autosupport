@@ -1,47 +1,77 @@
-import pkg from 'node-wit';
-import { Collection, Message } from 'discord.js';
-import recognize from 'tesseractocr';
-import { request } from 'undici';
-import responses from '@src/data.toml';
-import { config } from '@src/config';
+import { config, responseCache } from "@src/config";
+import { minimum_confidence as minimumConfidence } from "@src/data.toml";
+import { type Intent, witMessage } from "@utils/wit";
+import { Collection, type Message } from "discord.js";
+import { createWorker } from 'tesseract.js';
 
-const { Wit } = pkg;
+function getHighestConfidenceIntent(
+	intents: Intent[],
+): Intent | undefined {
+	if (!intents.length) return undefined;
 
-interface ConfigObject {
-	title: string;
-	responses: Record<string, string>;
+	const highestConfidenceIntent = intents.reduce((prev, current) =>
+		prev.confidence > current.confidence ? prev : current,
+	);
+
+	return highestConfidenceIntent.confidence >= minimumConfidence
+		? highestConfidenceIntent
+		: undefined;
 }
-
-const configStore = responses as ConfigObject;
-const responseCache = new Collection<string, string>();
-
-for (const [key, value] of Object.entries(configStore.responses)) {
-	responseCache.set(key, value);
-}
-
-const wit = new Wit({
-	accessToken: config.witAiToken,
-});
 
 export async function getResponse(message: Message) {
 	try {
-		let imageText: string | undefined;
+		if (!message.content.length && !message.attachments.size) return;
+		if (!message.inGuild()) return;
+		let imageText = "";
 
-		if (message.attachments.size) {
-			const attachment = message.attachments.first()!;
-			if (!attachment.contentType?.startsWith('image')) return;
+		const attachment = message.attachments.first();
 
-			const buffer = Buffer.from(await request(attachment.url).then((res) => res.body.arrayBuffer()));
-			const text = await recognize(buffer);
-			if (text) imageText = text;
+		if (attachment?.contentType?.startsWith("image")) {
+			const worker = await createWorker('eng');
+			const ret = await worker.recognize(attachment.url);
+			await worker.terminate();
+			imageText = ret.data.text;
 		}
 
-		const res = await wit.message(message.content + (imageText ? `\n${imageText}` : ''), {});
+		const res = await witMessage(
+			`${message.content}\n${imageText}`,
+			config.witAiServerToken[
+			config.devGuildId ? Object.keys(config.witAiServerToken)[0] : message.guildId
+			],
+		);
 
 		if (!res.intents.length) return;
-		await message.channel.sendTyping();
-		const intent = res.intents.reduce((prev, current) => (prev.confidence > current.confidence ? prev : current));
-		return responseCache.get(intent.name);
+		const selectedIntent = getHighestConfidenceIntent(res.intents);
+
+		if (selectedIntent) {
+			await message.channel.sendTyping();
+
+			let responseContent = '';
+			const aggregatedResponses = new Collection<string, string>();
+
+			if (config.devGuildId) {
+				for (const [, guildResponses] of responseCache) {
+					if (guildResponses) {
+						for (const [key, value] of guildResponses.values) {
+							aggregatedResponses.set(key, value);
+						}
+					}
+				}
+
+				responseContent = aggregatedResponses.get(selectedIntent.name) ?? '';
+			} else {
+				const guildResponses = responseCache.get(message.guildId);
+				if (guildResponses) {
+					responseContent = guildResponses.values.get(selectedIntent.name) ?? '';
+				}
+			}
+
+			await message.reply({
+				content: `${responseContent.trim()}\n-# triggered intent ${selectedIntent.name} with ${(selectedIntent.confidence * 100).toFixed(2)}% confidence`,
+				allowedMentions: { repliedUser: true },
+			});
+		}
+
 	} catch (error) {
 		message.client.logger.error(error);
 		return undefined;

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   autosupport:
     restart: unless-stopped
@@ -8,4 +6,6 @@ services:
       dockerfile: Dockerfile
       target: release
     container_name: autosupport
+    env_file:
+      - .env
     command: bun start
