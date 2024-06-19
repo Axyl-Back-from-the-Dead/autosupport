@@ -1,9 +1,9 @@
-import { responses } from "@src/data.toml";
+import data from "@src/data.toml";
 import { Collection } from "discord.js";
 import { createConfigLoader } from "neat-config";
 import { z } from "zod";
 
-const schema = z.object({
+const configSchema = z.object({
 	discordToken: z
 		.string()
 		.regex(/^([MN][\w-]{23,25})\.([\w-]{6})\.([\w-]{27,39})$/),
@@ -14,26 +14,20 @@ const schema = z.object({
 export const config = createConfigLoader()
 	.addFromFile(".env")
 	.addFromEnvironment()
-	.addZodSchema(schema)
+	.addZodSchema(configSchema)
 	.load();
 
-interface GuildResponse {
-	minimumConfidence: number;
-	ignoreReplies: boolean;
-	channelIds: string[];
-	ignoredRoles: string[];
-	values: Collection<string, string>;
-}
+const tomlSchema = z.record(z.string().regex(/^(?<id>\d{17,20})$/), z.record(z.string(), z.string()))
+tomlSchema.parse(data);
 
-export const responseCache = new Collection<string, GuildResponse>();
+export const responseCache = new Collection<string, Collection<string, string>>();
 
-for (const [key, value] of Object.entries(responses)) {
-	const { minimum_confidence: minimumConfidence, ignore_replies: ignoreReplies, channel_ids: channelIds, ignored_roles: ignoredRoles, values } = value;
-	const valueCollection = new Collection<string, string>();
+for (const [key, value] of Object.entries(data)) {
+	const values = new Collection<string, string>();
 
-	for (const [responseKey, responseValue] of Object.entries(values)) {
-		valueCollection.set(responseKey, responseValue);
+	for (const [responseKey, responseValue] of Object.entries(value)) {
+		values.set(responseKey, responseValue);
 	}
 
-	responseCache.set(key, { minimumConfidence, ignoreReplies, channelIds, ignoredRoles, values: valueCollection });
+	responseCache.set(key, values);
 }
