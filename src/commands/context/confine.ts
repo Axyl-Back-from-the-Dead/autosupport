@@ -1,4 +1,4 @@
-import { type Inmate, addInmate, getConfinementRoleId } from "@root/src/database/db";
+import { type Inmate, addInmate, getConfinementRoleId } from "@src/database/db";
 import { Command } from "@sapphire/framework";
 import { config, responseCache } from "@src/config";
 import {
@@ -65,7 +65,7 @@ export class ConfineCommand extends Command {
 				}
 			} catch (ex) {
 				await res.edit({ content: `Failed to confine member.\n${(ex as Error).message}`, components: [] });
-				console.error(ex);
+				this.container.logger.error(ex);
 			}
 		} catch (ex) {
 			this.container.logger.error(ex);
