@@ -54,7 +54,7 @@ export async function getResponse(message: Message) {
 			);
 			if (responseContent)
 				await message.reply({
-					content: `${responseContent.trim()}${config.devGuildId ? `\n-# triggered intent ${selectedIntent.name} with ${(selectedIntent.confidence * 100).toFixed(2)}% confidence` : ""}`,
+					content: `${responseContent.trim()}\n-# triggered intent ${selectedIntent.name} with ${(selectedIntent.confidence * 100).toFixed(2)}% confidence`,
 					allowedMentions: { repliedUser: true },
 				});
 		}
