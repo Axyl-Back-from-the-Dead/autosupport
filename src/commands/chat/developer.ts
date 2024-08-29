@@ -14,7 +14,7 @@ export class DeveloperCategoryAccessGrantCommand extends Command {
 	public override async chatInputRun(interaction: ChatInputCommandInteraction) {
 		try {
 			if (!interaction.inCachedGuild()) return;
-			if (!config.devGuildId && !responseCache.has(interaction.guildId)) return;
+			if (!responseCache.has(interaction.guildId)) return;
 
 			const developerRoleId = await getDeveloperRoleId(interaction.guildId);
 			if (!developerRoleId) {
