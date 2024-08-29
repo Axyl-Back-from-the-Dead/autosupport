@@ -62,7 +62,7 @@ export class SettingsCommand extends Subcommand {
 					type: "group",
 					entries: [
 						{ name: "set", chatInputRun: "chatInputSetDeveloperRole" },
-						{ name: "clear", chatInputRun: "chatInputClearDevelopertRole" },
+						{ name: "clear", chatInputRun: "chatInputClearDeveloperRole" },
 					],
 				},
 				{
