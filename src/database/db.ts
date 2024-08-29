@@ -1,10 +1,10 @@
-import { Database } from 'bun:sqlite';
-import { eq } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
+import { Database } from "bun:sqlite";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/bun-sqlite";
 
-import * as schema from '@src/database/schema';
+import * as schema from "@src/database/schema";
 
-const sqlite = new Database('autosupport.db');
+const sqlite = new Database("autosupport.db");
 export const db = drizzle(sqlite, { schema });
 
 export type GuildSettings = typeof schema.guildPreferences.$inferSelect;
@@ -23,19 +23,30 @@ export async function getOrCreateGuildSettings(guildId: string) {
 
 	const newSettings: GuildSettings = {
 		id: guildId,
-		minimumConfidence: 0.80,
+		minimumConfidence: 0.8,
 		ignoreReplies: true,
 		channelIds: [],
 		ignoredRoles: [],
 		confinementRoleId: null,
+		developerRoleId: null,
 	};
 
-	const createdSettings = await db.insert(schema.guildPreferences).values(newSettings).returning();
+	const createdSettings = await db
+		.insert(schema.guildPreferences)
+		.values(newSettings)
+		.returning();
 	return createdSettings[0];
 }
 
-export async function updateGuildSettings(guildId: string, newSettings: Partial<GuildSettings>) {
-	await db.update(schema.guildPreferences).set(newSettings).where(eq(schema.guildPreferences.id, guildId)).returning();
+export async function updateGuildSettings(
+	guildId: string,
+	newSettings: Partial<GuildSettings>,
+) {
+	await db
+		.update(schema.guildPreferences)
+		.set(newSettings)
+		.where(eq(schema.guildPreferences.id, guildId))
+		.returning();
 	return getOrCreateGuildSettings(guildId);
 }
 
@@ -44,11 +55,17 @@ export async function getMinimumConfidence(guildId: string) {
 	return settings.minimumConfidence;
 }
 
-export async function setMinimumConfidence(guildId: string, minimumConfidence: number) {
+export async function setMinimumConfidence(
+	guildId: string,
+	minimumConfidence: number,
+) {
 	return updateGuildSettings(guildId, { minimumConfidence });
 }
 
-export async function setIgnoreReplies(guildId: string, ignoreReplies: boolean) {
+export async function setIgnoreReplies(
+	guildId: string,
+	ignoreReplies: boolean,
+) {
 	return updateGuildSettings(guildId, { ignoreReplies });
 }
 
@@ -58,7 +75,10 @@ export async function addSupportChannelId(guildId: string, channelId: string) {
 	return updateGuildSettings(guildId, { channelIds });
 }
 
-export async function removeSupportChannelId(guildId: string, channelId: string) {
+export async function removeSupportChannelId(
+	guildId: string,
+	channelId: string,
+) {
 	const settings = await getOrCreateGuildSettings(guildId);
 	const channelIds = settings.channelIds.filter((id) => id !== channelId);
 	return updateGuildSettings(guildId, { channelIds });
@@ -81,7 +101,10 @@ export async function getConfinementRoleId(guildId: string) {
 	return settings.confinementRoleId;
 }
 
-export async function setConfinementRoleId(guildId: string, confinementRoleId: string) {
+export async function setConfinementRoleId(
+	guildId: string,
+	confinementRoleId: string,
+) {
 	return updateGuildSettings(guildId, { confinementRoleId });
 }
 
@@ -89,16 +112,33 @@ export async function clearConfinementRoleId(guildId: string) {
 	return updateGuildSettings(guildId, { confinementRoleId: null });
 }
 
+export async function getDeveloperRoleId(guildId: string) {
+	const settings = await getOrCreateGuildSettings(guildId);
+	return settings.developerRoleId;
+}
+
+export async function setDeveloperRoleId(
+	guildId: string,
+	developerRoleId: string,
+) {
+	return updateGuildSettings(guildId, { developerRoleId });
+}
+
+export async function clearDeveloperRoleId(guildId: string) {
+	return updateGuildSettings(guildId, { developerRoleId: null });
+}
+
 export async function getInmates() {
-	const inmates = await db
-		.select()
-		.from(schema.inmates)
+	const inmates = await db.select().from(schema.inmates);
 
 	return inmates;
 }
 
 export async function addInmate(inmate: Inmate) {
-	const createdInmate = await db.insert(schema.inmates).values(inmate).returning();
+	const createdInmate = await db
+		.insert(schema.inmates)
+		.values(inmate)
+		.returning();
 	return createdInmate[0];
 }
 
